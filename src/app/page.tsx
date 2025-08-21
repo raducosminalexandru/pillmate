@@ -17,6 +17,17 @@ import {
 } from '@mui/icons-material';
 import Link from 'next/link';
 
+function DeleteButton({ id }: { id:number }) {
+  const api = process.env.NEXT_PUBLIC_API_URL!;
+  const onDelete = async () => {
+    if (!confirm("Delete this medication?")) return;
+    const res = await fetch(`${api}/api/medications/${id}`, { method: "DELETE" });
+    if (res.ok) location.reload();
+    else alert("Delete failed");
+  };
+  return <button onClick={onDelete}>Delete</button>;
+};
+
 export default function HomePage() {
   const quickActions = [
     {
