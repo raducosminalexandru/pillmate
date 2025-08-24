@@ -6,7 +6,7 @@ import {
   Button,
   TextField,
   Typography,
-  Grid,
+  Stack,
   Paper
 } from '@mui/material';
 
@@ -38,41 +38,35 @@ export default function AddMedicationPage() {
         <Typography variant="h4" component="h1" gutterBottom>
           Add Medication
         </Typography>
-        <form onSubmit={handleSubmit}>
-          <Grid container spacing={2}>
-            <Grid item xs={12}>
-              <TextField
-                label="Pill Name"
-                name="pillName"
-                fullWidth
-                required
-                value={formData.pillName}
-                onChange={handleChange}
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                label="Dosage"
-                name="dosage"
-                fullWidth
-                required
-                placeholder="E.g., 500mg"
-                value={formData.dosage}
-                onChange={handleChange}
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                label="Frequency"
-                name="frequency"
-                fullWidth
-                required
-                placeholder="E.g., Twice a day"
-                value={formData.frequency}
-                onChange={handleChange}
-              />
-            </Grid>
-            <Grid item xs={6}>
+        <Box component="form" onSubmit={handleSubmit}>
+          <Stack spacing={2}>
+            <TextField
+              label="Pill Name"
+              name="pillName"
+              fullWidth
+              required
+              value={formData.pillName}
+              onChange={handleChange}
+            />
+            <TextField
+              label="Dosage"
+              name="dosage"
+              fullWidth
+              required
+              placeholder="E.g., 500mg"
+              value={formData.dosage}
+              onChange={handleChange}
+            />
+            <TextField
+              label="Frequency"
+              name="frequency"
+              fullWidth
+              required
+              placeholder="E.g., Twice a day"
+              value={formData.frequency}
+              onChange={handleChange}
+            />
+            <Stack direction="row" spacing={2}>
               <TextField
                 label="Start Date"
                 name="startDate"
@@ -83,8 +77,6 @@ export default function AddMedicationPage() {
                 value={formData.startDate}
                 onChange={handleChange}
               />
-            </Grid>
-            <Grid item xs={6}>
               <TextField
                 label="End Date"
                 name="endDate"
@@ -95,37 +87,30 @@ export default function AddMedicationPage() {
                 value={formData.endDate}
                 onChange={handleChange}
               />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                label="Additional Notes (optional)"
-                name="notes"
-                fullWidth
-                multiline
-                rows={4}
-                value={formData.notes}
-                onChange={handleChange}
-              />
-            </Grid>
-            {/* Additional idea: Set a reminder before taking medication */}
-            <Grid item xs={12}>
-              <TextField
-                label="Reminder (optional)"
-                name="reminder"
-                fullWidth
-                placeholder="E.g., Remind me 30 minutes before"
-                helperText="Set a reminder for taking your medication"
-                value={formData.reminder}
-                onChange={handleChange}
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <Button variant="contained" type="submit" fullWidth>
-                Add Medication
-              </Button>
-            </Grid>
-          </Grid>
-        </form>
+            </Stack>
+            <TextField
+              label="Additional Notes (optional)"
+              name="notes"
+              fullWidth
+              multiline
+              rows={4}
+              value={formData.notes}
+              onChange={handleChange}
+            />
+            <TextField
+              label="Reminder (optional)"
+              name="reminder"
+              fullWidth
+              placeholder="E.g., Remind me 30 minutes before"
+              helperText="Set a reminder for taking your medication"
+              value={formData.reminder}
+              onChange={handleChange}
+            />
+            <Button variant="contained" type="submit" fullWidth>
+              Add Medication
+            </Button>
+          </Stack>
+        </Box>
       </Paper>
     </Box>
   );
