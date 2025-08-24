@@ -1,165 +1,148 @@
 'use client';
 
-import React from 'react';
-import {
-  Box,
-  Card,
-  CardContent,
-  Typography,
-  Chip,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemIcon,
-  LinearProgress,
-  Avatar,
-} from '@mui/material';
-import {
-  Notifications,
-  CheckCircle,
-  QrCodeScanner,
-  Schedule,
-  TrendingUp,
-  Add,
-  CalendarMonth,
-} from '@mui/icons-material';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import FullCalendar from '@fullcalendar/react';
+import dayGridPlugin from '@fullcalendar/daygrid';
+import timeGridPlugin from '@fullcalendar/timegrid';
+import interactionPlugin from '@fullcalendar/interaction';
+import listPlugin from '@fullcalendar/list';
 
 export default function CalendarPage() {
-  // Mock data
-  const nextReminders = [
-    { id: 1, time: '09:00', medication: 'Aspirin', status: 'pending' },
-    { id: 2, time: '12:00', medication: 'Vitamin D', status: 'pending' },
-    { id: 3, time: '18:00', medication: 'Ibuprofen', status: 'pending' },
-  ];
+  const router = useRouter();
+  const [medications, setMedications] = useState([]);
+  const [events, setEvents] = useState([]);
+  
+  useEffect(() => {
+    
 
-  const recentScans = [
-    { id: 1, medication: 'Aspirin', date: '2024-01-15', time: '08:45' },
-    { id: 2, medication: 'Vitamin D', date: '2024-01-14', time: '12:30' },
-    { id: 3, medication: 'Ibuprofen', date: '2024-01-14', time: '18:15' },
-  ];
-
-  const adherencePercentage = 87;
+    
+    setMedications([]);
+    
+    
+    const medicationEvents = medications.flatMap(med => {
+      return createEventsFromMedication(med);
+    });
+    
+    setEvents(medicationEvents);
+  }, [medications.length]); 
+  
+  
+  const createEventsFromMedication = (med) => {
+    const events = [];
+    
+    
+    switch(med.frequency) {
+      case 'daily':
+        
+        med.timeOfDay.forEach(time => {
+          events.push({
+            id: `${med.id}-${time}`,
+            title: `${med.name} ${med.dosage}`,
+            startTime: time,
+            endTime: getEndTime(time),
+            startRecur: med.startDate,
+            endRecur: med.endDate || null,
+            daysOfWeek: [0,1,2,3,4,5,6], 
+            backgroundColor: getColorForMedication(med.id),
+            extendedProps: { medication: med }
+          });
+        });
+        break;
+        
+      case 'weekly':
+        
+        med.timeOfDay.forEach(time => {
+          events.push({
+            id: `${med.id}-${time}`,
+            title: `${med.name} ${med.dosage}`,
+            startTime: time,
+            endTime: getEndTime(time),
+            startRecur: med.startDate,
+            endRecur: med.endDate || null,
+            daysOfWeek: med.daysOfWeek || [0], 
+            backgroundColor: getColorForMedication(med.id),
+            extendedProps: { medication: med }
+          });
+        });
+        break;
+        
+      default:
+        
+        med.timeOfDay.forEach(time => {
+          const [hours, minutes] = time.split(':').map(Number);
+          const startDate = new Date(med.startDate);
+          startDate.setHours(hours, minutes, 0);
+          
+          const endDate = new Date(startDate);
+          endDate.setMinutes(endDate.getMinutes() + 30);
+          
+          events.push({
+            id: `${med.id}-${time}`,
+            title: `${med.name} ${med.dosage}`,
+            start: startDate.toISOString(),
+            end: endDate.toISOString(),
+            backgroundColor: getColorForMedication(med.id),
+            extendedProps: { medication: med }
+          });
+        });
+    }
+    
+    return events;
+  };
+  
+  
+  const getEndTime = (time) => {
+    const [hours, minutes] = time.split(':').map(Number);
+    const date = new Date();
+    date.setHours(hours, minutes + 30, 0);
+    return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+  };
+  
+  
+  const getColorForMedication = (id) => {
+    let hash = 0;
+    for (let i = 0; i < id.length; i++) {
+      hash = id.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    return `hsl(${hash % 360}, 70%, 60%)`;
+  };
+  
+  
+  const handleEventClick = (info) => {
+    const medicationId = info.event.extendedProps.medication.id;
+    router.push(`/medications/${medicationId}`);
+  };
 
   return (
-    <Box sx={{ flexGrow: 1 }}>
-      <Typography variant="h4" gutterBottom>
-        Dashboard
-      </Typography>
-      <Typography variant="subtitle1" color="text.secondary" gutterBottom>
-        Sumar zilnic
-      </Typography>
-
-      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' }, gap: 3, mb: 3 }}>
-        {/* Next Reminders Card */}
-        <Card>
-          <CardContent>
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-              <Notifications color="primary" sx={{ mr: 1 }} />
-              <Typography variant="h6">Next Reminders</Typography>
-            </Box>
-            <List dense>
-              {nextReminders.map((reminder) => (
-                <ListItem key={reminder.id} sx={{ px: 0 }}>
-                  <ListItemIcon sx={{ minWidth: 40 }}>
-                    <Schedule color="action" />
-                  </ListItemIcon>
-                  <ListItemText
-                    primary={reminder.medication}
-                    secondary={reminder.time}
-                  />
-                  <Chip
-                    label="Pending"
-                    size="small"
-                    color="warning"
-                    variant="outlined"
-                  />
-                </ListItem>
-              ))}
-            </List>
-          </CardContent>
-        </Card>
-
-        {/* Adherence Percentage Card */}
-        <Card>
-          <CardContent>
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-              <TrendingUp color="primary" sx={{ mr: 1 }} />
-              <Typography variant="h6">Adherence %</Typography>
-            </Box>
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-              <Typography variant="h3" color="primary" sx={{ mr: 2 }}>
-                {adherencePercentage}%
-              </Typography>
-              <CheckCircle color="success" />
-            </Box>
-            <LinearProgress
-              variant="determinate"
-              value={adherencePercentage}
-              sx={{ height: 8, borderRadius: 4 }}
-            />
-                          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                This week&apos;s medication adherence
-              </Typography>
-          </CardContent>
-        </Card>
-
-        {/* Recent Scans Card */}
-        <Card>
-          <CardContent>
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-              <QrCodeScanner color="primary" sx={{ mr: 1 }} />
-              <Typography variant="h6">Recent Scans</Typography>
-            </Box>
-            <List dense>
-              {recentScans.map((scan) => (
-                <ListItem key={scan.id} sx={{ px: 0 }}>
-                  <ListItemIcon sx={{ minWidth: 40 }}>
-                    <Avatar sx={{ width: 24, height: 24, bgcolor: 'primary.main' }}>
-                      <QrCodeScanner sx={{ fontSize: 16 }} />
-                    </Avatar>
-                  </ListItemIcon>
-                  <ListItemText
-                    primary={scan.medication}
-                    secondary={`${scan.date} at ${scan.time}`}
-                  />
-                </ListItem>
-              ))}
-            </List>
-          </CardContent>
-        </Card>
-      </Box>
-
-      {/* Quick Actions */}
-      <Card>
-        <CardContent>
-          <Typography variant="h6" gutterBottom>
-            Quick Actions
-          </Typography>
-          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-            <Chip
-              icon={<Add />}
-              label="Add Medication"
-              color="primary"
-              variant="outlined"
-              clickable
-            />
-            <Chip
-              icon={<QrCodeScanner />}
-              label="Scan Pill"
-              color="secondary"
-              variant="outlined"
-              clickable
-            />
-            <Chip
-              icon={<CalendarMonth />}
-              label="View Calendar"
-              color="info"
-              variant="outlined"
-              clickable
-            />
-          </Box>
-        </CardContent>
-      </Card>
-    </Box>
+    <div className="container mx-auto p-4">
+      <h1 className="text-2xl font-bold mb-6">Medication Calendar</h1>
+      
+      {}
+      {events.length === 0 && (
+        <div className="text-center py-4 bg-gray-50 rounded mb-4">
+          <p>No medications scheduled. Add medications to see them on your calendar.</p>
+        </div>
+      )}
+      
+      <div className="bg-white rounded-lg shadow p-4 h-[calc(100vh-12rem)]">
+        <FullCalendar
+          plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin, listPlugin]}
+          initialView="dayGridMonth"
+          headerToolbar={{
+            left: 'prev,next today',
+            center: 'title',
+            right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek'
+          }}
+          events={events}
+          eventClick={handleEventClick}
+          height="100%"
+          nowIndicator={true}
+          editable={false}
+          selectable={true}
+          dayMaxEvents={true}
+        />
+      </div>
+    </div>
   );
 }
