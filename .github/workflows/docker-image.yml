@@ -1,0 +1,23 @@
+name: Build and Publish image of application on GHCR
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - name: Build the Docker image
+        run: docker build . --tag ghcr.io/raducosminalexandru/pillmate:latest
+
+      - name: Push the image to GHCR
+        run: docker push ghcr.io/raducosminalexandru/pillmate:latest

@@ -1,95 +1,132 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import {
-  Box, Card, CardContent, Typography, TextField,
-  Grid, Button, Stack
+  Box,
+  Button,
+  TextField,
+  Typography,
+  Grid,
+  Paper
 } from '@mui/material';
 
-const API = process.env.NEXT_PUBLIC_API_URL!;
-
 export default function AddMedicationPage() {
-  const router = useRouter();
-  const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({
-    name: '',
+  const [formData, setFormData] = useState({
+    pillName: '',
     dosage: '',
     frequency: '',
     startDate: '',
     endDate: '',
     notes: '',
-    reminderTime: ''
+    reminder: ''
   });
 
-  const set = <K extends keyof typeof form>(k: K, v: string) =>
-    setForm(prev => ({ ...prev, [k]: v }));
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
 
-  async function onSubmit(e: React.FormEvent) {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setSaving(true);
-    const res = await fetch(`${API}/api/medications`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        ...form,
-        endDate: form.endDate || null,
-        notes: form.notes || null,
-        reminderTime: form.reminderTime || null
-      })
-    });
-    setSaving(false);
-    if (res.ok) router.push('/medications');
-    else alert('Save failed');
-  }
+    console.log(formData);
+    // TODO: Add form submission logic (e.g., API call)
+  };
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Typography variant="h4" mb={2}>Add Medication</Typography>
-      <Card>
-        <CardContent>
-          <form onSubmit={onSubmit}>
-            <Grid container spacing={2}>
-              <Grid item xs={12} md={6}>
-                <TextField label="Pill Name *" fullWidth required value={form.name}
-                  onChange={e => set('name', e.target.value)} />
-              </Grid>
-              <Grid item xs={12} md={6}>
-                <TextField label="Dosage *" fullWidth required value={form.dosage}
-                  onChange={e => set('dosage', e.target.value)} />
-              </Grid>
-              <Grid item xs={12} md={6}>
-                <TextField label="Frequency *" fullWidth required value={form.frequency}
-                  onChange={e => set('frequency', e.target.value)} />
-              </Grid>
-              <Grid item xs={12} md={6}>
-                <TextField label="Start Date *" type="date" fullWidth required value={form.startDate}
-                  onChange={e => set('startDate', e.target.value)} InputLabelProps={{ shrink: true }} />
-              </Grid>
-              <Grid item xs={12} md={6}>
-                <TextField label="End Date" type="date" fullWidth value={form.endDate}
-                  onChange={e => set('endDate', e.target.value)} InputLabelProps={{ shrink: true }} />
-              </Grid>
-              <Grid item xs={12} md={6}>
-                <TextField label="Reminder (HH:mm)" fullWidth value={form.reminderTime}
-                  onChange={e => set('reminderTime', e.target.value)} />
-              </Grid>
-              <Grid item xs={12}>
-                <TextField label="Additional Notes" fullWidth multiline minRows={3} value={form.notes}
-                  onChange={e => set('notes', e.target.value)} />
-              </Grid>
-              <Grid item xs={12}>
-                <Stack direction="row" spacing={2} justifyContent="flex-end">
-                  <Button color="inherit" onClick={() => history.back()}>Cancel</Button>
-                  <Button type="submit" variant="contained" disabled={saving}>
-                    {saving ? 'Saving…' : 'Add Medication'}
-                  </Button>
-                </Stack>
-              </Grid>
+    <Box sx={{ maxWidth: 600, mx: 'auto', mt: 4 }}>
+      <Paper sx={{ p: 2 }}>
+        <Typography variant="h4" component="h1" gutterBottom>
+          Add Medication
+        </Typography>
+        <form onSubmit={handleSubmit}>
+          <Grid container spacing={2}>
+            <Grid item xs={12}>
+              <TextField
+                label="Pill Name"
+                name="pillName"
+                fullWidth
+                required
+                value={formData.pillName}
+                onChange={handleChange}
+              />
             </Grid>
-          </form>
-        </CardContent>
-      </Card>
+            <Grid item xs={12}>
+              <TextField
+                label="Dosage"
+                name="dosage"
+                fullWidth
+                required
+                placeholder="E.g., 500mg"
+                value={formData.dosage}
+                onChange={handleChange}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                label="Frequency"
+                name="frequency"
+                fullWidth
+                required
+                placeholder="E.g., Twice a day"
+                value={formData.frequency}
+                onChange={handleChange}
+              />
+            </Grid>
+            <Grid item xs={6}>
+              <TextField
+                label="Start Date"
+                name="startDate"
+                type="date"
+                fullWidth
+                required
+                InputLabelProps={{ shrink: true }}
+                value={formData.startDate}
+                onChange={handleChange}
+              />
+            </Grid>
+            <Grid item xs={6}>
+              <TextField
+                label="End Date"
+                name="endDate"
+                type="date"
+                fullWidth
+                required
+                InputLabelProps={{ shrink: true }}
+                value={formData.endDate}
+                onChange={handleChange}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                label="Additional Notes (optional)"
+                name="notes"
+                fullWidth
+                multiline
+                rows={4}
+                value={formData.notes}
+                onChange={handleChange}
+              />
+            </Grid>
+            {/* Additional idea: Set a reminder before taking medication */}
+            <Grid item xs={12}>
+              <TextField
+                label="Reminder (optional)"
+                name="reminder"
+                fullWidth
+                placeholder="E.g., Remind me 30 minutes before"
+                helperText="Set a reminder for taking your medication"
+                value={formData.reminder}
+                onChange={handleChange}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <Button variant="contained" type="submit" fullWidth>
+                Add Medication
+              </Button>
+            </Grid>
+          </Grid>
+        </form>
+      </Paper>
     </Box>
   );
 }
