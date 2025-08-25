@@ -1,21 +1,18 @@
 name: Build and Publish Docker Image on GHCR
-
 on:
   push:
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
-
 jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write  
-
     steps:
       - uses: actions/checkout@v4
-
+      
       - name: Log in to GHCR
         uses: docker/login-action@v2
         with:
@@ -23,9 +20,16 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}   
           
-      - name: Build Docker image
-        run: docker build . --tag ghcr.io/raducosminalexandru/pillmate:latest
-
-      # 4️⃣ Push the Docker image to GHCR
-      - name: Push Docker image
-        run: docker push ghcr.io/raducosminalexandru/pillmate:latest
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          images: ghcr.io/${{ github.repository }}
+          
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
