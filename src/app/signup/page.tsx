@@ -1,4 +1,4 @@
-'use client'
+'use client';
 
 import React from 'react';
 import {
@@ -14,11 +14,13 @@ import {
   TextField,
   Typography,
   Stack,
-  Card as MuiCard
+  Card as MuiCard,
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import logoIcon from './logo.svg';
 import { useRouter } from 'next/navigation';
+
+const API = process.env.NEXT_PUBLIC_API_URL!; // e.g. http://localhost:4000
 
 const Card = styled(MuiCard)(({ theme }) => ({
   display: 'flex',
@@ -35,7 +37,8 @@ const Card = styled(MuiCard)(({ theme }) => ({
   },
   boxShadow:
     'hsla(220, 30%, 5%, 0.05) 0px 5px 15px 0px, hsla(220, 25%, 10%, 0.05) 0px 15px 35px -5px',
-  ...theme.applyStyles('dark', {
+  // @ts-ignore - some themes expose applyStyles
+  ...theme.applyStyles?.('dark', {
     boxShadow:
       'hsla(220, 30%, 5%, 0.5) 0px 5px 15px 0px, hsla(220, 25%, 10%, 0.08) 0px 15px 35px -5px',
   }),
@@ -59,15 +62,17 @@ const SignUpContainer = styled(Stack)(({ theme }) => ({
     backgroundImage:
       'radial-gradient(ellipse at 50% 50%, hsl(210, 100%, 97%), hsl(0, 0%, 100%))',
     backgroundRepeat: 'no-repeat',
-    ...theme.applyStyles('dark', {
+    // @ts-ignore
+    ...theme.applyStyles?.('dark', {
       backgroundImage:
         'radial-gradient(at 50% 50%, hsla(210, 100%, 16%, 0.5), hsl(220, 30%, 5%))',
     }),
   },
 }));
 
-const SignUp = (props) => {
+const SignUp: React.FC = () => {
   const router = useRouter();
+
   const [emailError, setEmailError] = React.useState(false);
   const [emailErrorMessage, setEmailErrorMessage] = React.useState('');
   const [passwordError, setPasswordError] = React.useState(false);
@@ -75,35 +80,64 @@ const SignUp = (props) => {
   const [nameError, setNameError] = React.useState(false);
   const [nameErrorMessage, setNameErrorMessage] = React.useState('');
   const [isLoading, setIsLoading] = React.useState(false);
+  const [formError, setFormError] = React.useState<string | null>(null);
 
-  const handleSubmit = async (event) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    setFormError(null);
+
     if (!validateInputs()) return;
 
+    // Colectăm valorile din formular
+    const fd = new FormData(event.currentTarget);
+    const name = String(fd.get('name') || '');
+    const email = String(fd.get('email') || '');
+    const password = String(fd.get('password') || '');
+
     setIsLoading(true);
-    
     try {
-      // Simulate signup process
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // For now, just redirect to signin
-      // You can add your signup logic here
-      router.push('/signin');
+      const res = await fetch(`${API}/api/auth/signup`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, password }),
+      });
+
+      if (!res.ok) {
+        if (res.status === 409) {
+          setEmailError(true);
+          setEmailErrorMessage('This email is already registered.');
+          return;
+        }
+        if (res.status === 400) {
+          const err = await res.json().catch(() => ({}));
+          setFormError(err?.error || 'Validation error. Please check your inputs.');
+          return;
+        }
+        const err = await res.json().catch(() => ({}));
+        setFormError(err?.error || 'Signup failed. Please try again.');
+        return;
+        }
+
+      const data = await res.json(); // { user, token }
+      localStorage.setItem('token', data.token);
+
+      router.push('/medications'); // sau /dashboard
     } catch (error) {
       console.error('Signup error:', error);
+      setFormError('Network error. Please try again.');
     } finally {
       setIsLoading(false);
     }
   };
 
   const validateInputs = () => {
-    const email = document.getElementById('email');
-    const password = document.getElementById('password');
-    const name = document.getElementById('name');
+    const email = document.getElementById('email') as HTMLInputElement | null;
+    const password = document.getElementById('password') as HTMLInputElement | null;
+    const name = document.getElementById('name') as HTMLInputElement | null;
 
     let isValid = true;
 
-    if (!email.value || !/\S+@\S+\.\S+/.test(email.value)) {
+    if (!email?.value || !/\S+@\S+\.\S+/.test(email.value)) {
       setEmailError(true);
       setEmailErrorMessage('Please enter a valid email address.');
       isValid = false;
@@ -112,7 +146,7 @@ const SignUp = (props) => {
       setEmailErrorMessage('');
     }
 
-    if (!password.value || password.value.length < 6) {
+    if (!password?.value || password.value.length < 6) {
       setPasswordError(true);
       setPasswordErrorMessage('Password must be at least 6 characters long.');
       isValid = false;
@@ -121,7 +155,7 @@ const SignUp = (props) => {
       setPasswordErrorMessage('');
     }
 
-    if (!name.value || name.value.length < 1) {
+    if (!name?.value || name.value.length < 1) {
       setNameError(true);
       setNameErrorMessage('Please enter your name.');
       isValid = false;
@@ -138,7 +172,11 @@ const SignUp = (props) => {
       <CssBaseline enableColorScheme />
       <SignUpContainer direction="column" justifyContent="space-between">
         <Card variant="outlined">
-          <img src={logoIcon.src} alt="Logo" style={{ width: 64, height: 64, alignSelf: 'center' }} />
+          <img
+            src={logoIcon.src}
+            alt="Logo"
+            style={{ width: 64, height: 64, alignSelf: 'center' }}
+          />
           <Box
             component="form"
             onSubmit={handleSubmit}
@@ -166,6 +204,7 @@ const SignUp = (props) => {
                 color={nameError ? 'error' : 'primary'}
               />
             </FormControl>
+
             <FormControl>
               <FormLabel htmlFor="email">Email</FormLabel>
               <TextField
@@ -182,6 +221,7 @@ const SignUp = (props) => {
                 color={emailError ? 'error' : 'primary'}
               />
             </FormControl>
+
             <FormControl>
               <FormLabel htmlFor="password">Password</FormLabel>
               <TextField
@@ -198,28 +238,29 @@ const SignUp = (props) => {
                 color={passwordError ? 'error' : 'primary'}
               />
             </FormControl>
+
             <FormControlLabel
               control={<Checkbox value="agree" color="primary" required />}
               label="I agree to the terms and conditions"
             />
-            <Button
-              type="submit"
-              fullWidth
-              variant="contained"
-              disabled={isLoading}
-            >
+
+            <Button type="submit" fullWidth variant="contained" disabled={isLoading}>
               {isLoading ? 'Creating account...' : 'Sign up'}
             </Button>
+
+            {formError && (
+              <Typography color="error" variant="body2" sx={{ textAlign: 'center' }}>
+                {formError}
+              </Typography>
+            )}
           </Box>
+
           <Divider>or</Divider>
+
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             <Typography sx={{ textAlign: 'center' }}>
               Already have an account?{' '}
-              <MuiLink
-                href="/signin"
-                variant="body2"
-                sx={{ alignSelf: 'center' }}
-              >
+              <MuiLink href="/signin" variant="body2" sx={{ alignSelf: 'center' }}>
                 Sign in
               </MuiLink>
             </Typography>

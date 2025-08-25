@@ -1,7 +1,9 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { getAuthHeader } from '@/lib/auth-client';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   Box, Card, CardContent, Typography, List, ListItem, ListItemText,
   IconButton, Stack, Button, Chip
@@ -32,28 +34,72 @@ const API = process.env.NEXT_PUBLIC_API_URL!;
 function fmt(d?: string | null) {
   if (!d) return '';
   const dt = new Date(d);
-  return Number.isNaN(dt.getTime()) ? d! : dt.toISOString().slice(0, 10);
+  return Number.isNaN(dt.getTime()) ? (d as string) : dt.toISOString().slice(0, 10);
 }
 
 export default function MedicationsPage() {
+  const router = useRouter();
   const [items, setItems] = useState<Med[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   async function load() {
     setLoading(true);
-    const res = await fetch(`${API}/api/medications`, { cache: 'no-store' });
-    const data = await res.json();
-    setItems(data);
-    setLoading(false);
+    setError(null);
+    try {
+      const res = await fetch(`${API}/api/medications`, {
+        cache: 'no-store',
+        headers: { ...getAuthHeader() }, // 👈 trimite tokenul
+      });
+
+      if (res.status === 401) {
+        router.replace('/signin');      // 👈 dacă nu ești logat
+        return;
+      }
+      if (!res.ok) {
+        setError('Failed to load medications.');
+        return;
+      }
+
+      const data = await res.json();
+      setItems(data);
+    } catch {
+      setError('Network error.');
+    } finally {
+      setLoading(false);
+    }
   }
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    // dacă nu există token, du-l direct la sign-in
+    const t = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    if (!t) {
+      router.replace('/signin');
+      return;
+    }
+    load();
+  }, [router]);
 
   async function onDelete(id: number) {
     if (!confirm('Delete this medication?')) return;
-    const res = await fetch(`${API}/api/medications/${id}`, { method: 'DELETE' });
-    if (res.ok) setItems(prev => prev.filter(x => x.id !== id));
-    else alert('Delete failed');
+    try {
+      const res = await fetch(`${API}/api/medications/${id}`, {
+        method: 'DELETE',
+        headers: { ...getAuthHeader() }, // 👈 trimite tokenul
+      });
+
+      if (res.status === 401) {
+        router.replace('/signin');
+        return;
+      }
+      if (res.ok) {
+        setItems(prev => prev.filter(x => x.id !== id));
+      } else {
+        alert('Delete failed');
+      }
+    } catch {
+      alert('Delete failed');
+    }
   }
 
   return (
@@ -68,6 +114,12 @@ export default function MedicationsPage() {
       <Card>
         <CardContent>
           <Typography variant="h6" mb={2}>Current Medications</Typography>
+
+          {error && (
+            <Typography color="error" sx={{ mb: 1 }}>
+              {error}
+            </Typography>
+          )}
 
           {loading ? (
             <Typography>Loading…</Typography>

@@ -1,27 +1,16 @@
-'use client'
+'use client';
 
 import React from 'react';
 import {
-  Box,
-  Button,
-  Checkbox,
-  CssBaseline,
-  FormControlLabel,
-  Divider,
-  FormLabel,
-  FormControl,
-  Link as MuiLink,
-  TextField,
-  Typography,
-  Stack,
-  Card as MuiCard
+  Box, Button, Checkbox, CssBaseline, FormControl, FormControlLabel,
+  FormLabel, Link as MuiLink, TextField, Typography, Divider, Stack, Card as MuiCard
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
+import { signIn } from 'next-auth/react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import logoIcon from './logo.svg';
-console.log('logoIcon:', logoIcon, typeof logoIcon);
-import { signIn, useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
 
+// --- stilurile tale, le poți păstra cum le aveai ---
 const Card = styled(MuiCard)(({ theme }) => ({
   display: 'flex',
   flexDirection: 'column',
@@ -32,15 +21,7 @@ const Card = styled(MuiCard)(({ theme }) => ({
   margin: 'auto',
   maxHeight: '90vh',
   overflowY: 'auto',
-  [theme.breakpoints.up('sm')]: {
-    maxWidth: '450px',
-  },
-  boxShadow:
-    'hsla(220, 30%, 5%, 0.05) 0px 5px 15px 0px, hsla(220, 25%, 10%, 0.05) 0px 15px 35px -5px',
-  ...theme.applyStyles('dark', {
-    boxShadow:
-      'hsla(220, 30%, 5%, 0.5) 0px 5px 15px 0px, hsla(220, 25%, 10%, 0.08) 0px 15px 35px -5px',
-  }),
+  [theme.breakpoints.up('sm')]: { maxWidth: '450px' },
 }));
 
 const SignInContainer = styled(Stack)(({ theme }) => ({
@@ -49,105 +30,76 @@ const SignInContainer = styled(Stack)(({ theme }) => ({
   overflowY: 'auto',
   WebkitOverflowScrolling: 'touch',
   padding: theme.spacing(2),
-  [theme.breakpoints.up('sm')]: {
-    padding: theme.spacing(4),
-  },
-  '&::before': {
-    content: '""',
-    display: 'block',
-    position: 'absolute',
-    zIndex: -1,
-    inset: 0,
-    backgroundImage:
-      'radial-gradient(ellipse at 50% 50%, hsl(210, 100%, 97%), hsl(0, 0%, 100%))',
-    backgroundRepeat: 'no-repeat',
-    ...theme.applyStyles('dark', {
-      backgroundImage:
-        'radial-gradient(at 50% 50%, hsla(210, 100%, 16%, 0.5), hsl(220, 30%, 5%))',
-    }),
-  },
+  [theme.breakpoints.up('sm')]: { padding: theme.spacing(4) },
 }));
 
-const SignIn = (props) => {
-  const { data: session, status } = useSession();
+export default function SignIn() {
   const router = useRouter();
+  const search = useSearchParams();
+  const callbackUrl = search.get('callbackUrl') ?? '/';
+
   const [emailError, setEmailError] = React.useState(false);
   const [emailErrorMessage, setEmailErrorMessage] = React.useState('');
   const [passwordError, setPasswordError] = React.useState(false);
   const [passwordErrorMessage, setPasswordErrorMessage] = React.useState('');
+  const [formError, setFormError] = React.useState<string | null>(null);
   const [isLoading, setIsLoading] = React.useState(false);
 
-  // Redirect if already signed in
-  React.useEffect(() => {
-    if (session) {
-      router.push('/');
-    }
-  }, [session, router]);
+  function validateInputs(form: HTMLFormElement) {
+    const email = (form.querySelector('#email') as HTMLInputElement)?.value || '';
+    const password = (form.querySelector('#password') as HTMLInputElement)?.value || '';
+    let ok = true;
 
-  // Show loading while checking session
-  if (status === 'loading') {
-    return <div>Loading...</div>;
-  }
-
-  // --- Update handleSubmit to use NextAuth signIn ---
-  const handleSubmit = async (event) => {
-    event.preventDefault();
-    if (!validateInputs()) return;
-
-    setIsLoading(true);
-    const data = new FormData(event.currentTarget);
-    const email = data.get('email');
-    const password = data.get('password');
-
-    try {
-      const result = await signIn("credentials", {
-        email,
-        password,
-        redirect: false,
-      });
-      
-      if (result?.error) {
-        setPasswordError(true);
-        setPasswordErrorMessage(result.error);
-      } else {
-        // Success - redirect will happen automatically via useEffect
-        setPasswordError(false);
-        setPasswordErrorMessage('');
-        router.push('/');
-      }
-    } catch (error) {
-      setPasswordError(true);
-      setPasswordErrorMessage(error.message || "Sign in failed.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const validateInputs = () => {
-    const email = document.getElementById('email');
-    const password = document.getElementById('password');
-
-    let isValid = true;
-
-    if (!email.value || !/\S+@\S+\.\S+/.test(email.value)) {
+    if (!/\S+@\S+\.\S+/.test(email)) {
       setEmailError(true);
-      setEmailErrorMessage('Please enter a valid email address.');
-      isValid = false;
+      setEmailErrorMessage('Please enter a valid email.');
+      ok = false;
     } else {
       setEmailError(false);
       setEmailErrorMessage('');
     }
 
-    if (!password.value || password.value.length < 6) {
+    if (password.length < 6) {
       setPasswordError(true);
-      setPasswordErrorMessage('Password must be at least 6 characters long.');
-      isValid = false;
+      setPasswordErrorMessage('Password must be at least 6 characters.');
+      ok = false;
     } else {
       setPasswordError(false);
       setPasswordErrorMessage('');
     }
 
-    return isValid;
+    return ok;
+  }
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setFormError(null);
+
+    const form = event.currentTarget;
+    if (!validateInputs(form)) return;
+
+    const data = new FormData(form);
+    const email = String(data.get('email') || '');
+    const password = String(data.get('password') || '');
+
+    setIsLoading(true);
+    const result = await signIn('credentials', {
+      email,
+      password,
+      redirect: false,     // nu lăsa NextAuth să redirecționeze implicit
+      callbackUrl,         // unde vrem să ajungem după login
+    });
+    setIsLoading(false);
+
+    if (result?.error) {
+      setFormError(result.error);
+      setPasswordError(true);
+      setPasswordErrorMessage(result.error);
+      return;
+    }
+
+    // succes -> mergem în aplicație
+    router.replace(callbackUrl);
   };
 
   return (
@@ -156,16 +108,12 @@ const SignIn = (props) => {
       <SignInContainer direction="column" justifyContent="space-between">
         <Card variant="outlined">
           <img src={logoIcon.src} alt="Logo" style={{ width: 64, height: 64, alignSelf: 'center' }} />
+
           <Box
             component="form"
             onSubmit={handleSubmit}
             noValidate
-            sx={{
-              display: 'flex',
-              flexDirection: 'column',
-              width: '100%',
-              gap: 2,
-            }}
+            sx={{ display: 'flex', flexDirection: 'column', width: '100%', gap: 2 }}
           >
             <FormControl>
               <FormLabel htmlFor="email">Email</FormLabel>
@@ -175,69 +123,48 @@ const SignIn = (props) => {
                 id="email"
                 type="email"
                 name="email"
-                placeholder="your@email.com"
+                placeholder="you@example.com"
                 autoComplete="email"
                 autoFocus
                 required
                 fullWidth
-                variant="outlined"
-                color={emailError ? 'error' : 'primary'}
               />
             </FormControl>
+
             <FormControl>
               <FormLabel htmlFor="password">Password</FormLabel>
               <TextField
                 error={passwordError}
                 helperText={passwordErrorMessage}
-                name="password"
-                placeholder="••••••"
-                type="password"
                 id="password"
+                name="password"
+                type="password"
+                placeholder="••••••"
                 autoComplete="current-password"
                 required
                 fullWidth
-                variant="outlined"
-                color={passwordError ? 'error' : 'primary'}
               />
             </FormControl>
-            <FormControlLabel
-              control={<Checkbox value="remember" color="primary" />}
-              label="Remember me"
-            />
-            <Button
-              type="submit"
-              fullWidth
-              variant="contained"
-              disabled={isLoading}
-            >
-              {isLoading ? 'Signing in...' : 'Sign in'}
+
+            <FormControlLabel control={<Checkbox value="remember" color="primary" />} label="Remember me" />
+
+            {formError && (
+              <Typography color="error" variant="body2">{formError}</Typography>
+            )}
+
+            <Button type="submit" fullWidth variant="contained" disabled={isLoading}>
+              {isLoading ? 'Signing in…' : 'Sign in'}
             </Button>
-            <MuiLink
-              component="button"
-              type="button"
-              variant="body2"
-              sx={{ alignSelf: 'center' }}
-            >
-              Forgot your password?
+
+            <MuiLink href="/signup" variant="body2" sx={{ alignSelf: 'center' }}>
+              Don&apos;t have an account? Sign up
             </MuiLink>
           </Box>
+
           <Divider>or</Divider>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <Typography sx={{ textAlign: 'center' }}>
-              Don&apos;t have an account?{' '}
-              <MuiLink
-                href="/signup"
-                variant="body2"
-                sx={{ alignSelf: 'center' }}
-              >
-                Sign up
-              </MuiLink>
-            </Typography>
-          </Box>
+          {/* alte acțiuni sociale, dacă e cazul */}
         </Card>
       </SignInContainer>
     </>
   );
-};
-
-export default SignIn;
+}

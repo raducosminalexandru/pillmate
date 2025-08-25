@@ -1,48 +1,22 @@
-"use client";
-
-import { useSession } from "next-auth/react";
-import { useRouter, usePathname } from "next/navigation";
-import { useEffect } from "react";
-import { Box, CircularProgress } from '@mui/material';
-
-
-const publicRoutes = ["/", "/settings", "/signin", "/signup", ["/medications"]];
+'use client';
+import { useSession } from 'next-auth/react';
+import { useEffect } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
 
 export default function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { data: session, status } = useSession();
+  const { status } = useSession(); // 'loading' | 'authenticated' | 'unauthenticated'
   const router = useRouter();
   const pathname = usePathname();
-  const isLoading = status === "loading";
-  const isPublicRoute = publicRoutes.some(route => 
-    pathname === route || pathname?.startsWith(`${route}/`)
-  );
-  
+
   useEffect(() => {
-
-    if (!isLoading && !session && !isPublicRoute) {
-      router.push("/signin");
+    if (status === 'unauthenticated') {
+      router.replace(`/signin?callbackUrl=${encodeURIComponent(pathname)}`);
     }
-  }, [isLoading, session, router, pathname, isPublicRoute]);
+  }, [status, router, pathname]);
 
-
-  if (isLoading) {
-    return (
-      <Box sx={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        height: '100vh' 
-      }}>
-        <CircularProgress />
-      </Box>
-    );
+  if (status !== 'authenticated') {
+    return null; // poți afișa un spinner dacă vrei
   }
-  
-
-  if (!session && !isPublicRoute) {
-    return null;
-  }
-  
 
   return <>{children}</>;
 }
