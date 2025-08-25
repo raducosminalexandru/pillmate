@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   Typography,
@@ -8,14 +8,140 @@ import {
   CardContent,
   CardActionArea,
   Button,
+  Fab,
+  Paper,
+  TextField,
+  IconButton,
+  Avatar,
 } from '@mui/material';
 import {
   Dashboard,
   CalendarMonth,
   Medication,
   QrCodeScanner,
+  Chat as ChatIcon,
+  Close,
+  Send,
 } from '@mui/icons-material';
 import Link from 'next/link';
+
+function ChatBot() {
+  const [open, setOpen] = useState(false);
+  const [input, setInput] = useState('');
+  
+  
+  const toggleChat = () => {
+    setOpen(!open);
+  };
+  
+  
+  const handleSend = (e) => {
+    e.preventDefault();
+    
+    setInput('');
+    
+  };
+
+  return (
+    <Box sx={{ position: 'fixed', bottom: 20, right: 20, zIndex: 1000 }}>
+      {open ? (
+        <Paper 
+          elevation={3} 
+          sx={{ 
+            width: 320,
+            height: 400,
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
+            borderRadius: 2,
+          }}
+        >
+          {/* Chat */}
+          <Box sx={{ 
+            p: 2, 
+            bgcolor: 'primary.main', 
+            color: 'white',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between'
+          }}>
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <Avatar sx={{ bgcolor: 'white', color: 'primary.main', mr: 1 }}>
+                <ChatIcon />
+              </Avatar>
+              <Typography variant="h6">PillMate Assistant</Typography>
+            </Box>
+            <IconButton onClick={toggleChat} sx={{ color: 'white' }}>
+              <Close />
+            </IconButton>
+          </Box>
+          
+          {/* Chat messages area */}
+          <Box sx={{ 
+            flexGrow: 1, 
+            p: 2, 
+            overflowY: 'auto',
+            bgcolor: '#f5f5f5',
+            display: 'flex',
+            flexDirection: 'column'
+          }}>
+            <Paper sx={{ 
+              alignSelf: 'flex-start', 
+              p: 1, 
+              mb: 1, 
+              maxWidth: '80%',
+              borderRadius: '18px 18px 18px 4px'
+            }}>
+              <Typography variant="body2">
+                Bună ziua! Cum vă pot ajuta astăzi cu administrarea medicamentelor?
+              </Typography>
+            </Paper>
+          </Box>
+          
+          {/* Chat */}
+          <Box component="form" onSubmit={handleSend} sx={{ 
+            p: 1, 
+            borderTop: '1px solid',
+            borderColor: 'divider',
+            bgcolor: 'white',
+            display: 'flex'
+          }}>
+            <TextField
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder="Scrieți un mesaj..."
+              variant="outlined"
+              size="small"
+              fullWidth
+              sx={{ mr: 1 }}
+            />
+            <IconButton 
+              type="submit" 
+              color="primary"
+              disabled={!input.trim()}
+            >
+              <Send />
+            </IconButton>
+          </Box>
+        </Paper>
+      ) : (
+        <Fab 
+          color="primary" 
+          aria-label="chat" 
+          onClick={toggleChat}
+          sx={{ 
+            boxShadow: 3,
+            '&:hover': {
+              transform: 'scale(1.05)',
+            },
+          }}
+        >
+          <ChatIcon />
+        </Fab>
+      )}
+    </Box>
+  );
+}
 
 function DeleteButton({ id }: { id:number }) {
   const api = process.env.NEXT_PUBLIC_API_URL!;
@@ -137,6 +263,9 @@ export default function HomePage() {
           Add First Medication
         </Button>
       </Box>
+      
+      {}
+      <ChatBot />
     </Box>
   );
 }
