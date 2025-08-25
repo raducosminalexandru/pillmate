@@ -24,7 +24,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
           
       - name: Build Docker image
-        run: docker build . --tag ghcr.io/raducosminalexandru/pillmate:latest
+        run: docker build . --tag ghcr.io/raducosminalexandru/pillmate
         
       - name: Push Docker image to GHCR
         run: docker push ghcr.io/raducosminalexandru/pillmate:latest
