@@ -29,7 +29,7 @@ export default function AddMedicationPage() {
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     console.log(formData);
-    // TODO: Add form submission logic (e.g., API call)
+    // TODO: Add form submission logic (example: API call)
   };
 
   return (
