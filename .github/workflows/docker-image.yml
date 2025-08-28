@@ -2,9 +2,9 @@ name: Build and Publish Docker Image on GHCR
 
 on:
   push:
-    branches: ["main"]
+    branches: ["main", "front", "Continuare-backend"]
   pull_request:
-    branches: ["main"]
+    branches: ["main", "front", "Continuare-backend"]
 
 jobs:
   build:
