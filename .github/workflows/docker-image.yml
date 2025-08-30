@@ -1,5 +1,4 @@
 name: Build and Publish Docker Image on GHCR
-#test
 
 on:
   push:
