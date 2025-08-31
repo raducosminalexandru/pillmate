@@ -1,5 +1,4 @@
 name: Build, Publish & Update Manifests
-#test
 
 on:
   push:
